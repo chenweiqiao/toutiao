@@ -1,0 +1,48 @@
+.post.detail {
+    margin-top: 80px;
+}
+
+.post-tags {
+    margin: 15px 15px 15px 55px;
+}
+
+.social-share-button {
+    margin: 20px 0;
+}
+
+.weixin-qrcode-dropdown {
+  display: inline-block;
+  .weixin-qrcode-dropdown-menu {
+    min-width: 122px;
+    line-height: 16px;
+    padding: 5px;
+    text-align: center;
+    top: 110%;
+    left: -76px;
+  }
+}
+
+.login-actions {
+    margin: 15px;
+    text-align: center;
+}
+
+.comments {
+  margin: 20px 0;
+  .media {
+    margin: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 5px;
+    .media-left img {
+      width: 50px;
+      height: 50px;
+    }
+    h4 {
+      font-size: 14px;
+    }
+  }
+}
+
+.post .summary a {
+    font-size: 14px;
+}

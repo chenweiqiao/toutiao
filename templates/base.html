@@ -1,0 +1,70 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    {% block head %}
+      <title>{% block title %}开发者头条{% endblock %}</title>
+      <link rel="stylesheet" href="{{url_for('static', filename='css/bootstrap.min.css')}}">
+      <script src="{{url_for('static', filename='js/jquery-3.3.1.min.js')}}"></script>
+      <script src="{{url_for('static', filename='js/popper.min.js')}}"></script>
+      <script src="{{url_for('static', filename='js/bootstrap.min.js')}}"></script>
+      <script src="{{url_for('static', filename='dist/base.js')}}"></script>
+    {% endblock %}
+    </head>
+    <body>
+      <header class="navbar">
+        <div class="container">
+          <ul class="nav {% if request.user %}navbar-right{% endif %}">
+            <li class="nav-item">
+              <a class="nav-link active" href="/">首页</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/tag/python/">Python</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/search">搜索</a>
+            </li>
+            {% if request.user %}
+            <li class="dropdown profile">
+              <a href="" class="dropdown-toggle clear navbar-profile" data-toggle="dropdown" aria-expanded="true">
+                <span><img width="25" height="25" src="{{ request.user.avatar_path }}"></span> <b class="caret"></b>
+              </a>
+              <ul class="dropdown-menu">
+                <li class="dropdown-item"><a href="{{ url_for('account.user_likes', identifier=request.user.id) }}">我的点赞</a></li>
+                <li class="dropdown-item"><a href="{{ url_for('account.user_favorites', identifier=request.user.id) }}">我的收藏</a></li>
+                <li class="dropdown-item"><a href="{{ url_for('account.user_following', identifier=request.user.id) }}">我的关注</a></li>
+                <li class="dropdown-item"><a href="{{ url_for('account.settings') }}">个人设置</a></li>
+                <li class="dropdown-item"><a href="/logout">退出</a></li>
+              </ul>
+            </li>
+            {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="/login">登录</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/register">注册</a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </header>
+      <div id="main">
+        <div class="container">
+          {% block content %}
+          {% endblock %}
+        </div>
+      </div>
+      <footer>
+        {% block footer %}
+          <p class="text-center">
+            <a href="/about">关于我们</a>
+            <a href="/tags">标签</a>
+          </p>
+          <p class="text-center">© 2018-2019</p>
+        {% endblock %}
+      </footer>
+    </body>
+    {% block bottomscript %}
+    {% endblock %}
+</html>

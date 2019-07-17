@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+
+{% block head %}
+  {{ super() }}
+  <meta name="url" content="{{ request.url }}">
+  <meta name="title" content="{{ post.title }}">
+  <meta name="description" content="{{ post.abstract_content }}">
+  <script src="{{url_for('static', filename='js/qrcode.min.js')}}"></script>
+{% endblock %}
+
+{% block bottomscript %}
+  {{ super() }}
+  <script src="{{url_for('static', filename='dist/post.js')}}"></script>
+{% endblock %}
+
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+  {% set url = post.url() %}
+  {{ macros.card(post, False) }}
+  <div class="post-tags">
+    {% for tag in post.tags %}
+      <a class="btn btn-default btn-rounded btn-xs" href="{{ tag.url() }}">{{ tag.name }}</a>
+    {% endfor %}
+  </div>
+  <div class="social-share-button text-center" data-title="{{ post.title }} {{ url }} 分享自 @{{ post.author.name }}" data-type="text" data-url={{ url }}>
+    <h5>分享到</h5>
+    <a class="btn btn-danger share-weibo" rel="external nofollow" data-site="weibo" href="javascript;;"><i class="iconfont toutiao-weibo"></i> 微博</a>
+    <span class="dropdown weixin-qrcode-dropdown">
+      <button class="btn btn-success" type="button" data-toggle="dropdown"><i class="iconfont toutiao-weixin"></i> 微信</button>
+      <span class="dropdown-menu weixin-qrcode-dropdown-menu" data-url="{{ url }}">
+        <span id="weixin-qrcode" data-url="{{ url }}"></span>
+      </span>
+    </span>
+  </div>
+
+  <div class="post-comment-form">
+    <span>评论 ({{ post.n_comments }})</span>
+
+    {% if not request.user %}
+    <div class="login-actions">
+      <a class="btn btn-success" href="/signin">登录后评论</a>
+    </div>
+    {% else %}
+    <form id="comment-form" novalidate="novalidate" class="new_comment" data-url="post/{{ post.id }}/comment" accept-charset="UTF-8" method="post">
+      <div class="form-group text required comment_content">
+        <textarea rows="5" class="text required comment-content form-control" id="comment-content"></textarea>
+      </div>
+      <div class="text-right">
+        <input type="submit" id="comment-submit" name="commit" value="提 交" class="btn btn-default btn-info">
+      </div>
+    </form>
+    {% endif %}
+  </div>
+
+  <div id="comments" class="comments">
+    {% for comment in post.get_comments(None) %}
+    {{ macros.render_comment(comment) }}
+    {% endfor %}
+  </div>
+{% endblock %}

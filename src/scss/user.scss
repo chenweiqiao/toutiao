@@ -1,0 +1,46 @@
+.img-circle {
+    border-radius: 50%;
+}
+
+.m-b {
+    margin-bottom: 15px;
+}
+
+.m-b-xs {
+    margin-bottom: 5px;
+}
+
+a {
+    color: #363f44;
+    text-decoration: none;
+    cursor: pointer;
+    &:hover, &:focus {
+        color: #141719;
+        text-decoration: none;
+    }
+}
+
+.follows {
+    .media {
+        margin: 20px 0 35px 0;
+    }
+    .media-body {
+        width: 100%;
+    }
+    .media-heading {
+        line-height: 20px;
+        small {
+            display: inline-block;
+            margin-left: 10px;
+            line-height: 20px;
+        }
+    }
+}
+
+h4, .h4 {
+    font-size: 18px;
+}
+
+.pull-right {
+    float: right!important;
+}

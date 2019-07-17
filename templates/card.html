@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+
+{% block title %}搜索 - 头条{% endblock %}
+
+{% block bottomscript %}
+{{ super() }}
+  <script src="{{url_for('static', filename='dist/card.js')}}"></script>
+{% endblock %}
+
+{% block content %}
+  {% for post in p.items %}
+    {{ macros.card(post) }}
+  {% endfor %}
+  {{ macros.render_pagination(p, endpoint, identifier=identifier) }}  <!-- Fix pagination -->
+{% endblock %}

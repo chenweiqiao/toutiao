@@ -1,0 +1,135 @@
+.btn-group-vertical>.btn:last-child:not(:first-child) {
+    border-bottom-left-radius: 2px;
+}
+
+.post {
+  border-bottom: 1px dashed #e3ecec;
+  padding-left: 5px;
+  position: relative;
+
+  .content {
+    cursor: default;
+    min-height: 85px;
+    margin: 4px 0 0;
+    padding: 5px 85px 10px 55px;
+  }
+
+  .title {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    margin: 0 0 10px 0;
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  a {
+    color: #063642;
+    text-decoration: none;
+    font-size: 16px;
+  }
+  .summary {
+      margin: 2px 0 10px 0;
+      word-wrap: break-word;
+  }
+  .meta {
+      display: inline-block;
+      margin-right: 10px;
+      vertical-align: top;
+      color: #999;
+       span {
+          display: inline-block;
+          margin-left: 10px;
+          font-size: 14px;
+      }
+  }
+  .user-info {
+    width: 100px;
+    position: absolute;
+    right: 0;
+    top: 10px;
+    text-align: center;
+    &:hover .info {
+        display: block;
+    }
+    .user-avatar {
+        padding: 10px;
+        a {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            position: relative;
+            img {
+                width: 32px;
+                height: 32px;
+            }
+        }
+    }
+    .info {
+        display: none;
+        width: 180px;
+        padding: 8px 10px;
+        position: absolute;
+        bottom: 55px;
+        right: -30px;
+        z-index: 9999;
+        background: #FFF;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 2px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        font-size: 12px;
+        h5 {
+            margin-top: 0;
+        }
+        a {
+            font-size: 12px;
+            img {
+                width: 48px;
+                height: 48px;
+            }
+        }
+        h4 {
+            font-size: 16px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .bio {
+            text-align: left;
+        }
+    }
+  }
+  .upvote {
+    position: absolute;
+    left: 5px;
+    top: 12px;
+    a {
+        width: 45px;
+        font-size: 14px;
+        border-color: #ECECEC;
+        span {
+            display: block;
+            line-height: 16px;
+            font-size: 10px;
+        }
+    }
+  }
+  .subject-name {
+      width: 100px;
+      position: absolute;
+      right: 0;
+      top: 56px;
+      font-size: 12px;
+      text-align: center;
+      line-height: 14px;
+      a {
+          font-size: 12px;
+      }
+  }
+  .upvote a.liked, .upvote a.collected {
+      border-left-color: #29afec;
+      border-right-color: #29afec;
+      background-color: #29afec;
+      color: #FFF !important;
+  }
+}

@@ -1,0 +1,28 @@
+{% macro render_field_with_errors(field, hidden=False, cls="", label=None) %}
+
+{%
+  set label_name = (label or field.label).text
+%}
+{%
+  set label_id = field.label.field_id
+%}
+
+<div class="form-group {{ 'hide' if hidden else ''}} {{ cls }}">
+  <label class="col-sm-4 control-label" for="{{ label_id  }}">{{ label_name }}</label>
+  <div class="col-sm-4">
+    <input type="{% if label_id == 'password' %}password{% else %}text{% endif %}" name="{{ label_id }}" id="{{ label_id }}" class="form-control" autofocus="autofocus" autocomplete="off">
+  </div>
+  {% if field.errors %}
+  <p class="control-label is-danger">{{ field.errors[0] }}</p>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro render_submit(text, name='submit') %}
+  <div class="form-group">
+    <div class="col-sm-4"></div>
+    <div class="col-sm-4">
+      <input type="submit" name="{{ name }}" value="{{ text }}" class="btn btn-default">
+    </div>
+  </div>
+  {% endmacro %}

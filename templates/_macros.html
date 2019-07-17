@@ -1,0 +1,125 @@
+{% macro card(post, show_comment=True) %}
+  {% set author = post.author %}
+  {% set is_liked = post.is_liked_by(request.user_id) %}
+  {% set is_collected = post.is_collected_by(request.user_id) %}
+  {% set is_followed = author.is_followed_by(request.user_id) %}
+
+  <div class="post detail">
+    <div class="btn-group-vertical upvote">
+      <a id="like-button-{{ post.id }}" class="btn btn-default btn-xs like-button {% if is_liked %}liked{% endif %}" rel="nofollow" data-url="post/{{ post.id }}/like" data-original-title="点赞">
+        <i class="iconfont {% if is_liked %}toutiao-thumbsup{% else %}toutiao-thumbsoup{% endif %}"></i> <span>{{ post.n_likes }}</span>
+      </a>
+
+      <a id="favorite-button-{{ post.id }}" class="btn btn-default btn-xs collect-button {% if is_collected %}collected{% endif %}" rel="nofollow" data-method="post" data-url="post/{{ post.id }}/collect" data-original-title="收藏">
+        <i class="iconfont {% if is_collected %}toutiao-bookmark{% else %}toutiao-bookmarko{% endif %}"></i>
+      </a>
+    </div>
+
+    <div class="content">
+      <h3 class="title">
+        <a target="_blank" rel="external" title="{{ post.title }} - 开发者头条" href="{{ post.orig_url }}">
+          {{ post.title }}
+        </a>
+      </h3>
+      <p class="summary"><a href="{{ post.url() }}">{{ post.abstract_content }}</a></p>
+      <div class="meta">
+        {{ post.netloc }}
+        {% if show_comment %}
+        <span>
+          <i class="iconfont {% if post.n_comments %}toutiao-comment{% else %}toutiao-commento{% endif %}"></i> {{ post.n_comments }}
+        </span>
+        {% endif %}
+      </div>
+    </div>
+
+<div class="user-info">
+  <div class="user-avatar">
+    <a title="{{ author.name }} - 开发者头条" href="{{ author.url() }}">
+      <img width="32" alt="{{ author.name }} - 独家号" src="{{ author.avatar_path }}">
+    </a>
+  </div>
+
+  <div class="info">
+    <h5>作者</h5>
+
+    <a href="/u/200993"><img width="48" alt="{{ author.name }} - 开发者头条" src="{{ author.avatar_path }}"></a>
+
+    <h4 class="m-b-xs">{{ author.name }}</h4>
+
+    <p class="bio">{{ author.bio }}</p>
+    <a class="btn btn-info btn-xs follow-button {% if is_followed %}followed{% endif %}" data-disable-with="请稍候..." rel="nofollow" data-url="{{ author.url() }}/follow">
+      <i class="iconfont toutiao-eye"></i>{% if is_followed %}已{% endif %}关注TA
+    </a>
+  </div>
+</div>
+
+<div class="subject-name">
+  <a href="{{ author.url() }}">{{ author.name }}</a></div>
+
+  </div>
+{% endmacro %}
+
+{% macro render_pagination(pagination, endpoint) %}
+<nav aria-label="...">
+  <ul class="pagination">
+    {% if pagination.has_prev %}
+    <li class="page-item">
+      <a class="page-link" href="{{ url_for(endpoint, page=pagination.prev_num, **kwargs) }}">Prev &laquo;</a>
+    </li>
+    {% endif %}
+
+    {% if pagination %}
+      {%- for page in pagination.iter_pages() %}
+      {% if page %}
+        {% if pagination.has_next %}
+        <li class="page-item {% if page == pagination.page %}active{% endif %}">
+          <a class="page-link" href="{{ url_for(endpoint, page=page, **kwargs) }}">{{ page }}</a>
+        </li>
+        {% endif %}
+      {% else %}
+        <li class="page-item disabled">
+          <a class="page-link" href="#">...</a>
+        </li>
+      {% endif %}
+      {%- endfor %}
+    {% endif %}
+
+    {% if pagination.has_next %}
+    <li class="page-item">
+      <a class="page-link" href="{{ url_for(endpoint, page=pagination.next_num, **kwargs) }}">Next &raquo;</a>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endmacro %}
+
+{% macro render_comment(comment) %}
+{% set user = comment.user %}
+<div class="comment media">
+  <a class="media-left" href="{{ user.url() }}"><img src="{{ user.avatar_path }}" alt="Thumb"></a>
+  <div class="media-body">
+    <h4 class="media-heading">{{ user.name }}<small class="date">{{ comment.created_at }}</small></h4>
+    <div>{{ comment.content }}</div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro render_user(user) %}
+<div class="media" id="follows-{{ user.id }}">
+  <div class="media-left">
+    <a href="{{ user.url() }}"><img width="48" height=48 class="media-object img-circle" alt="{{ user.name }} - 开发者头条" src="{{ user.avatar_path }}"></a>
+  </div>
+
+  <div class="media-body">
+    <h4 class="media-heading m-b-xs">
+      <a title="{{ user.name }} - 开发者头条" href="{{ user.url() }}">{{ user.name }}</a>
+
+      <small class="pull-right" id="followers-{{ user.id }}-count">
+        <span>{{ user.n_followers }}</span><span>关注者</span>
+      </small>
+    </h4>
+
+    <div class="bio">{{ user.bio }}</div>
+  </div>
+</div>
+{% endmacro %}

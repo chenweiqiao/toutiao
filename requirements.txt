@@ -1,0 +1,21 @@
+walrus==0.6.4
+requests==2.20.0
+dogpile.cache==0.6.7
+flask==1.0.2
+ipython==7.1.1
+flask-migrate==2.3.0
+flask-sqlalchemy==2.3.2
+livereload==2.5.2
+feedparser==5.2.1
+bcrypt==3.1.4
+elasticsearch-dsl==7.0.0
+celery==4.2.1
+msgpack==0.5.6
+msgpack-python==0.5.6
+marshmallow==2.16.3
+pymysql==0.9.3
+-e git+https://github.com/chenweiqiao/flask-security.git@develop#egg=flask_security
+-e git+https://github.com/chenweiqiao/social-core.git@master#egg=social_core
+-e git+https://github.com/chenweiqiao/social-app-flask-sqlalchemy.git@master#egg=social_flask_sqlalchemy
+-e git+https://github.com/chenweiqiao/social-storage-sqlalchemy.git@master#egg=social_sqlalchemy
+-e git+https://github.com/chenweiqiao/social-app-flask.git@master#egg=social_flask

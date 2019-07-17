@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+
+{% block title %}{{ tag.name }} - 头条{% endblock %}
+
+{% block bottomscript %}
+{{ super() }}
+  <script src="{{url_for('static', filename='dist/tag.js')}}"></script>
+{% endblock %}
+
+{% block content %}
+  <h3 class="tag-name text-center">{{ tag.name }}</h3>
+  <ul class="nav nav-tabs" id="tag-tab" role="tablist">
+    {% for name, type_ in (('热门分享', 'hot'), ('最新分享', 'latest'))%}
+    <li class="nav-item">
+      <a class="nav-link tag-link {% if type == type_  %}active{% endif %}" id="{{type_}}-tab" data-toggle="tab" data-url="{% if type == type_  %}{{ update_url_query(request.full_path, {'type': type_}) }}{% else %}{{ update_url_query(url_for(request.endpoint, ident=ident), {'type':type_}) }}{% endif %}" role="tab">{{ name }}</a>  <!-- Fix pagination for different tab -->
+    </li>
+    {% endfor %}
+  </ul>
+
+  {% for post in posts.items %}
+    {{ macros.card(post) }}
+  {% endfor %}
+  {{ macros.render_pagination(posts, 'index.tag', ident=ident, type=type) }}
+{% endblock %}

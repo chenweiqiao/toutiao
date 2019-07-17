@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section>
+    <div class="center">
+      <div class="landing">
+      {% if type in ('reset', 'confirm', 'register') %}
+      <h3 class="title">申请提交成功！请{{action}}账号</h3>
+
+      <div class="cont">
+        <div class="desc">
+          {{action}}邮件已经发送到{{email}}邮箱，请在6小时内登录邮箱点击链接完成{{action}}
+        </div>
+        <div class="split"></div>
+        <div class="email_rel">
+          <h3>没有收到邮件怎么办？</h3>
+          <ul>
+            <li><i></i>尝试在广告邮件、垃圾邮件目录下查找</li>
+            <li><i></i>找不到可以 <a class="u-a" href="/confirm">重新发送</a></li>
+            <li><i></i>如一直收不到，请更换邮箱，<a class="u-a" href="/register">重新注册</a></li>
+          </ul>
+        </div>
+      </div>
+      {% else %}
+      <p class="confirmed">{{email}}已确认！<a href="{{ url_for_security('login') }}">请登录</a></p>
+      {% endif %}
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block bottomscript %}
+   {{ super() }}
+   <script src="{{url_for('static', filename='dist/landing.js')}}"></script>
+{% endblock %}

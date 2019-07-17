@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+
+{% block title %}{{ user.name }} - 头条{% endblock %}
+
+{% block bottomscript %}
+{{ super() }}
+  <script src="{{url_for('static', filename='dist/user.js')}}"></script>
+{% endblock %}
+
+{% set is_followed = user.is_followed_by(request.user_id) %}
+
+{% block content %}
+  <div class="user-info text-center m-b">
+    <img width="80" height=80 class="img-circle" src="{{ user.avatar_path }}" alt="">
+    <h4 class="m-b-xs">{{ user.name }}</h4>
+
+    {% if user.github_url %}
+    <p><span>GitHub</span> <a target="_blank" href="https://github.com/{{ user.github_id }}"> @{{ user.github_id }}</a></p>
+    {% endif %}
+
+    <p><a target="_blank" href="{{ user.website }}">个人主页</a></p>
+
+    <p><a class="btn btn-info btn-xs follow-button {% if is_followed %}followed{% endif %}" data-disable-with="请稍候..." rel="nofollow" data-url="{{ user.url() }}/follow">
+      {% if is_followed %}已{% endif %}关注TA
+    </a> </p>
+
+    <div class="bio">{{ user.bio }}</div>
+  </div>
+
+  <ul class="nav nav-tabs" id="user-tab" role="tablist">
+    {% for name, endpoint_ in (('关注', 'account.user_following'), ('关注者', 'account.user_followers')) %}
+    <li class="nav-item">
+      <a class="nav-link tag-link {% if endpoint == endpoint_  %}active{% endif %}" id="{{ endpoint_ }}-tab" data-toggle="tab" data-url="{{ update_url_query(url_for(endpoint_, identifier=identifier), {'page': page}) }}" role="tab">{{ name }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <div class="container follows">
+  {% for user in p.items %}
+    {{ macros.render_user(user) }}
+    {% endfor %}
+  </div>
+  {{ macros.render_pagination(p, endpoint, identifier=identifier) }}
+{% endblock %}

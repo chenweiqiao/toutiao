@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+
+{% block title %}搜索 - 头条{% endblock %}
+
+{% block head %}
+{{ super() }}
+  <script src="{{url_for('static', filename='dist/search.js')}}"></script>
+{% endblock %}
+
+{% block bottomscript %}
+{{ super() }}
+  <script src="{{url_for('static', filename='dist/card.js')}}"></script>
+{% endblock %}
+
+{% block content %}
+  <form action="/search" accept-charset="UTF-8" method="get" _lpchecked="1">
+    <div class="input-group">
+      <input type="text" name="q" id="q" value="{{query}}" class="form-control" placeholder="搜索 Python">
+      <span class="input-group-btn">
+        <button type="submit" class="btn btn-default search">
+          <i class="iconfont toutiao-search"></i>
+        </button>
+      </span>
+    </div>
+  </form>
+
+  {% for post in posts.items %}
+    {{ macros.card(post) }}
+  {% endfor %}
+  {{ macros.render_pagination(posts, 'index.search', q=query) }}
+{% endblock %}
