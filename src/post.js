@@ -5,7 +5,6 @@ import "./card";
 import {SimpleShare} from "./simple-share";
 
 var $comments = $('#comments');
-var $submitBtn = $('#comment-submit');
 var $commentForm = $('#comment-form');
 
 $commentForm.on('submit', (event) => {

@@ -4,33 +4,20 @@ import copy
 import json
 from datetime import datetime
 
-from flask_sqlalchemy import SQLAlchemy, Model, DefaultMeta, _QueryProperty
-from sqlalchemy.ext.declarative import (DeclarativeMeta, declarative_base,
-                                        declared_attr)
+from flask_sqlalchemy import SQLAlchemy, Model, DefaultMeta, declarative_base
 from sqlalchemy import Column, DateTime, Integer, event
-
-from sqlalchemy.ext.serializer import loads, dumps
-from walrus import Database as _Database
+from sqlalchemy.exc import InvalidRequestError
 from flask import abort
+from walrus import Database
 
 from corelib.local_cache import lc
-from corelib.caching import regions, query_callable, Cache
 from config import REDIS_URL
+from corelib.mc import cache
+
+MC_KEY_GET_ID = 'db:BaseModel:get(%s,%s)'  # obj_type:obj_id 缓存`Model.get(id)`
 
 
-class Database(_Database):
-    def get2(self, name):
-        """ TODO 准备替换父类get() """
-        rs = super().get(name)
-        return loads(rs)
-
-    def set2(self, name, value, ex=None, px=None, nx=False, xx=False):
-        """ TODO 准备替换父类set() """
-        value = dumps(value)
-        return super().set(name, value, ex=ex, px=px, nx=nx, xx=xx)
-
-
-class PropsItem(object):
+class PropsItem:
     def __init__(self, name, default=None, output_filter=None, pre_set=None):
         self.name = name
         self.default = default
@@ -65,22 +52,18 @@ def date_outputfilter(v):
 
 class DatetimePropsItem(PropsItem):
     def __init__(self, name, default=None):
-        super(DatetimePropsItem, self).__init__(name, default,
-                                                datetime_outputfilter)
+        super().__init__(name, default, datetime_outputfilter)
 
 
 class DatePropsItem(PropsItem):
     def __init__(self, name, default=None):
-        super(DatePropsItem, self).__init__(name, default, date_outputfilter)
+        super().__init__(name, default, date_outputfilter)
 
 
-class PropsMixin(object):
+class PropsMixin:
+    """ 专门处理`posts`和`comments` """
     @property
-    def _props_name(self):
-        '''
-        为了保证能够与corelib.mixin.wrapper能和谐的工作
-        需要不同的class有不同的__props以免冲突
-        '''
+    def _props_lc_key(self):
         return '__%s/props_cached' % self.get_uuid()
 
     @property
@@ -88,27 +71,23 @@ class PropsMixin(object):
         return '%s/props' % self.get_uuid()
 
     def _get_props(self):
-        props = lc.get(self._props_name)
+        props = lc.get(self._props_lc_key)
         if props is None:
             props = rdb.get(self._props_db_key) or ''
             props = props and json.loads(props) or {}
-            lc.set(self._props_name, props)
+            lc.set(self._props_lc_key, props)
         return props
 
     def _set_props(self, props):
+        """ param `props` is a mapping object """
         rdb.set(self._props_db_key, json.dumps(props))
-        lc.delete(self._props_name)
+        lc.delete(self._props_lc_key)
 
     def _destory_props(self):
         rdb.delete(self._props_db_key)
-        lc.delete(self._props_name)
+        lc.delete(self._props_lc_key)
 
-    _destroy_props = _destory_props
-
-    get_props = _get_props
-    set_props = _set_props
-
-    props = property(_get_props, _set_props)
+    props = property(_get_props, _set_props, _destory_props)
 
     def set_props_item(self, key, value):
         props = self.props
@@ -150,17 +129,16 @@ class PropsMixin(object):
 
     @classmethod
     def create_or_update(cls, **kwargs):
-        session = db.session
         props = cls.get_db_props(kwargs)
         id = kwargs.pop('id', None)
-        if id is not None:
+        if id is not None:  # for update obj
             obj = cls.query.get(id)
             if obj:
                 if 'update_at' not in kwargs:
                     kwargs['update_at'] = datetime.now()
                 for k, v in kwargs.items():
                     setattr(obj, k, v)
-                session.commit()
+                obj.save()
                 cls.update_db_props(obj, props)
                 return False, obj
         obj = cls(**kwargs)
@@ -175,15 +153,11 @@ class PropsMixin(object):
 
 
 class BaseModel(PropsMixin, Model):
-    cache_label = "default"
-    cache_regions = regions
-    query_class = query_callable(regions)
-
-    __table_args__ = {'mysql_charset': 'utf8mb4'}
-
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime, default=datetime.utcnow())
     updated_at = Column(DateTime, default=None)
+
+    __table_args__ = {'mysql_charset': 'utf8mb4'}
 
     def get_uuid(self):
         return '/bran/{0.__class__.__name__}/{0.id}'.format(self)
@@ -191,14 +165,10 @@ class BaseModel(PropsMixin, Model):
     def __repr__(self):
         return '<{0} id: {1}>'.format(self.__class__.__name__, self.id)
 
-    @declared_attr
-    def cache(cls):
-        return Cache(cls, cls.cache_regions, cls.cache_label)
-
     @classmethod
+    @cache(MC_KEY_GET_ID % ('{cls.__name__}', '{id}'))
     def get(cls, id):
-        # return cls.query.get(id)  # 应该从cls.cache.get(id)取值更合适
-        return cls.cache.get(id)
+        return cls.query.get(id)
 
     @classmethod
     def get_or_404(cls, ident):
@@ -209,13 +179,13 @@ class BaseModel(PropsMixin, Model):
 
     @classmethod
     def get_multi(cls, ids):
-        return [cls.cache.get(id) for id in ids]  # 从缓存中取值
+        return [cls.get(id) for id in ids]
 
     def url(self):
         return '/{}/{}/'.format(self.__class__.__name__.lower(), self.id)
 
     def to_dict(self):
-        columns = self.__table__.columns.keys() + ['kind']  # 增加一个`kind`的字段给`Comment`和`Post`使用  # noqa
+        columns = self.__table__.columns.keys() + ['kind']  # `kind`是给`Comment`表和`Post`表使用  # noqa
         dct = {key: getattr(self, key, None) for key in columns}
         return dct
 
@@ -239,7 +209,10 @@ class BaseModel(PropsMixin, Model):
         self.save()
 
     def save(self):
-        db.session.add(self)
+        try:
+            db.session.add(self)
+        except InvalidRequestError: # 这个错误是由于User.get(id)返回的是缓存对象，而Request那里调用了current_user，从数据库读取user，因此在db.session留下了对象；缓存对象更新某些字段后,db.session里的对象并不能感知缓存对象的变化，需要用merge方法合并到session中 # noqa
+            db.session.merge(self)  # Fix `sqlalchemy.exc.InvalidRequestError: Can't attach instance xxx; another instance with key zzz is already present in this session.` # noqa
         db.session.commit()
 
     def delete(self):
@@ -248,15 +221,20 @@ class BaseModel(PropsMixin, Model):
 
     @staticmethod
     def _flush_insert_event(mapper, connection, target):
-        target._flush_event(mapper, connection, target)
         if hasattr(target, 'kind'):
             from handler.tasks import reindex
-            reindex.delay(target.id, target.kind, op_type='create')
+            reindex.apply_async(args=(target.id, target.kind, 'create'), countdown=1)  # 此时新增post及它的tags还没写入数据库，而reindex会提前读取post.tags导致缓存里数据为空 # noqa
         target.__flush_insert_event__(target)
 
     @staticmethod
+    def _flush_delete_event(mapper, connection, target):
+        if hasattr(target, 'kind'):
+            from handler.tasks import reindex
+            reindex.delay(target.id, target.kind, op_type='delete')
+        target.__flush_delete_event__(target)
+
+    @staticmethod
     def _flush_after_update_event(mapper, connection, target):
-        target._flush_event(mapper, connection, target)
         if hasattr(target, 'kind'):
             from handler.tasks import reindex
             reindex.delay(target.id, target.kind, op_type='update')
@@ -264,101 +242,47 @@ class BaseModel(PropsMixin, Model):
 
     @staticmethod
     def _flush_before_update_event(mapper, connection, target):
-        target._flush_event(mapper, connection, target)
         target.__flush_before_update_event__(target)
-
-    @staticmethod
-    def _flush_delete_event(mapper, connection, target):
-        target._flush_event(mapper, connection, target)
-        if hasattr(target, 'kind'):
-            from handler.tasks import reindex
-            reindex.delay(target.id, target.kind, op_type='delete')
-        target.__flush_delete_event__(target)
-
-    @staticmethod
-    def _flush_event(mapper, connection, target):
-        target.cache._flush_all(target)  # 清除target在dogpile.cache的缓存
-        target.__flush_event__(target)  # 清除target在walrus的缓存
 
     @classmethod
     def __flush_event__(cls, target):
+        rdb.delete(MC_KEY_GET_ID % (target.__class__.__name__, target.id))
+
+    @classmethod
+    def __flush_insert_event__(cls, target):
         pass
 
     @classmethod
-    def __flush_delete_event__(cls, target):  # 调用clear_mc作最后的清理
-        pass
+    def __flush_delete_event__(cls, target):
+        target.__flush_event__(target)
 
     @classmethod
-    def __flush_insert_event__(cls, target):  # 调用clear_mc作最后的清理
-        pass
+    def __flush_after_update_event__(cls, target):
+        target.__flush_event__(target)
 
     @classmethod
-    def __flush_after_update_event__(cls, target):  # 调用clear_mc作最后的清理
-        pass
-
-    @classmethod
-    def __flush_before_update_event__(cls, target):  # 调用clear_mc作最后的清理
+    def __flush_before_update_event__(cls, target):
         pass
 
     @classmethod
     def __declare_last__(cls):
+        event.listen(cls, 'after_insert', cls._flush_insert_event)
         event.listen(cls, 'after_delete', cls._flush_delete_event)
         event.listen(cls, 'after_update', cls._flush_after_update_event)
         event.listen(cls, 'before_update', cls._flush_before_update_event)
-        event.listen(cls, 'after_insert', cls._flush_insert_event)
 
 
-class BindDBPropertyMixin(object):
-    def __init__(cls, name, bases, d):  # 元类初始化使用
-        super(BindDBPropertyMixin, cls).__init__(name, bases, d)
+class BindDBPropertyMeta(DefaultMeta):
+    def __init__(cls, name, bases, d):
+        super().__init__(name, bases, d)
         db_columns = []
         for k, v in d.items():
             if isinstance(v, PropsItem):
                 db_columns.append((k, v.default))
-        # 针对拥有属性`PropsItem`的类增加一个特殊属性
-        setattr(cls, '_db_columns', db_columns)
+        cls._db_columns = db_columns
 
 
-class CombinedMeta(BindDBPropertyMixin, DefaultMeta):
-    pass
-
-
-class UnLockedAlchemy(SQLAlchemy):
-    """
-    Custom SQLAlchemy by customing `BaseModel`, `CachingQuery`, `CombinedMeta`
-    """
-
-    def make_declarative_base(self, model, metadata=None):
-        """
-        Creates the declarative base that all models will inherit from.
-
-        Called by __init__()
-        """
-        if not isinstance(model, DeclarativeMeta):
-            model = declarative_base(cls=model,
-                                     name='Model',
-                                     metadata=metadata,
-                                     metaclass=CombinedMeta)
-
-        if metadata is not None and model.metadata is not metadata:
-            model.metadata = metadata
-
-        if not getattr(model, 'query_class', None):
-            model.query_class = self.Query
-
-        model.query = _QueryProperty(self)
-        return model
-
-    def apply_driver_hacks(self, app, info, options):
-        """
-        This method is called before engine creation and used to inject
-        driver specific hacks into the options.
-        """
-        if 'isolation_level' not in options:
-            options['isolation_level'] = 'READ COMMITTED'
-        return super(UnLockedAlchemy,
-                     self).apply_driver_hacks(app, info, options)
-
-
-rdb = Database.from_url(REDIS_URL)  # 一个redis缓存器
-db = UnLockedAlchemy(model_class=BaseModel)
+rdb = Database.from_url(REDIS_URL)
+db = SQLAlchemy(model_class=declarative_base(cls=BaseModel,
+                                             metaclass=BindDBPropertyMeta,
+                                             name='Model'))

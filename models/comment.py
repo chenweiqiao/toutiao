@@ -5,7 +5,7 @@ from models.like import LikeMixin
 from models.user import User
 from corelib.db import PropsItem
 from corelib.consts import K_COMMENT
-from corelib.utils import cached_hybrid_property
+from corelib.utils import cached_property
 
 
 class CommentItem(ActionMixin, LikeMixin, db.Model):
@@ -22,11 +22,11 @@ class CommentItem(ActionMixin, LikeMixin, db.Model):
     __table_args__ = (db.Index('idx_ti_tk_ui', target_id, target_kind,
                                user_id), )
 
-    @cached_hybrid_property
+    @cached_property
     def html_content(self):
         return self.content
 
-    @cached_hybrid_property
+    @cached_property
     def user(self):
         return User.get(self.user_id)
 
@@ -50,7 +50,7 @@ class CommentMixin(object):
         return False
 
     def get_comments(self, page):
-        return CommentItem.gets_by_target(self.id, self.kind, page)
+        return CommentItem.get_page_by_target(self.id, self.kind, page)
 
     @property
     def n_comments(self):

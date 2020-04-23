@@ -4,9 +4,9 @@ from flask_security import login_user, current_user
 from flask_security.utils import verify_password as _verify_password
 from flask_httpauth import HTTPBasicAuth
 
-from . import user_datastore, json_api, ApiException, errors
+from . import user_datastore, json_api, ApiException, errors  # 因为是在包内，可以这样引用
 
-auth = HTTPBasicAuth()  # 配合json_api蓝图使用
+auth = HTTPBasicAuth()  # 配合 json_api 蓝图使用
 
 
 @auth.verify_password
@@ -32,6 +32,6 @@ def auth_error():
 
 
 @json_api.before_request
-@auth.login_required  # 由httpauth验证保护json_api的全部路由
+@auth.login_required  # 由 httpauth 验证保护 json_api 的全部路由
 def auth_before_request():
     pass

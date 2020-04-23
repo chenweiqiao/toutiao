@@ -4,11 +4,7 @@ from html.parser import HTMLParser
 import feedparser
 
 from app import app
-from models.core import Post, PostTag, Tag, db
-from models.search import Item
-from models.collect import CollectItem
-from models.comment import CommentItem
-from models.like import LikeItem
+from models.core import Post
 
 
 class MLStripper(HTMLParser):
@@ -48,7 +44,7 @@ def fetch(url):
             created_at = datetime.strptime(entry.published,
                                            '%a, %d %b %Y %H:%M:%S %z')
         try:
-            tags = entry.tags
+            tags = [tag.term for tag in entry.tags] + ['python']
         except AttributeError:
             tags = []
 
@@ -57,17 +53,11 @@ def fetch(url):
                                          orig_url=entry.link,
                                          content=strip_tags(content),
                                          created_at=created_at,
-                                         tags=[tag.term for tag in tags])
+                                         tags=tags)
 
 
 def main():
     with app.test_request_context():
-        Item._index.delete(ignore=404)  # 删除Elasticsearch索引，销毁全部数据
-        Item.init()
-        for model in (Post, Tag, PostTag, CollectItem, CommentItem, LikeItem):
-            model.query.delete()  # 数据库操作要通过SQLAlchemy，不要直接链接数据库操作
-        db.session.commit()
-
         for site in ('https://coolshell.cn/feed', ):
             fetch(site)
 

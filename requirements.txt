@@ -16,7 +16,3 @@ marshmallow==2.16.3
 pymysql==0.9.3
 flask_httpauth==3.3.0
 -e git+https://github.com/chenweiqiao/flask-security.git@develop#egg=flask_security
--e git+https://github.com/chenweiqiao/social-core.git@master#egg=social_core
--e git+https://github.com/chenweiqiao/social-app-flask-sqlalchemy.git@master#egg=social_flask_sqlalchemy
--e git+https://github.com/chenweiqiao/social-storage-sqlalchemy.git@master#egg=social_sqlalchemy
--e git+https://github.com/chenweiqiao/social-app-flask.git@master#egg=social_flask

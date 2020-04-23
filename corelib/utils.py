@@ -5,21 +5,16 @@ import random
 import binascii
 import threading
 import urllib.parse
-# from sqlalchemy.ext.hybrid import hybrid_property
-from redis.exceptions import ResponseError
-
-from corelib.db import rdb
 
 _missing = object()
 
 
-# class cached_hybrid_property(hybrid_property):
-class cached_hybrid_property(property):
+class cached_property(property):
 
     def __get__(self, instance, owner):
         """ Cache result in __dict__ """
         if instance is None:
-            return self.expr(owner)
+            return self
         else:
             name = self.fget.__name__
             value = instance.__dict__.get(name, _missing)
@@ -130,6 +125,9 @@ def update_url_query(url, params):
 
 
 def incr_key(stat_key, amount):
+    from corelib.db import rdb
+    from redis.exceptions import ResponseError
+
     try:
         total = rdb.incr(stat_key, amount)
     except ResponseError:

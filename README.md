@@ -67,57 +67,34 @@
 
 ### 21. 关注关系
 
-### 22. 第三方登录
+### 22. 分享
 
-### 23. 分享
+### 23. 首页Feed
 
-### 24. 首页Feed
-
-### 25. 完整测试一遍
+### 24. 完整测试一遍
   - 测试环境：
-    - Ubuntu18 + Python3.6 + Mysql5.7 + Redis4.0 + Elasticsearch7.0 + Npm3.5
+    - Ubuntu18 + Python3.6 + Mysql5.7 + Redis4.0 + Elasticsearch7.6 + Npm6.9
     - pip install -r requirements.txt
-      - `安装Github依赖包时可能会引用错误，需要把对应依赖包卸载后重新安装`
-      - pip install -e git+https://github.com/chenweiqiao/flask-security.git@develop#egg=flask_security
-      - pip install -e git+https://github.com/chenweiqiao/social-core.git@master#egg=social_core
-      - pip install -e git+https://github.com/chenweiqiao/social-app-flask-sqlalchemy.git@master#egg=social_flask_sqlalchemy
-      - pip install -e git+https://github.com/chenweiqiao/social-storage-sqlalchemy.git@master#egg=social_sqlalchemy
-      - pip install -e git+https://github.com/chenweiqiao/social-app-flask.git@master#egg=social_flask 
-    - Github登录验证
-      - 首先得有Github帐户
-      - 登录后，在Settings创建[OAuth Apps](https://github.com/settings/applications/new)
-        - Application name
-          - Toutiao
-        - Homepage URL
-          - http://toutiao.ie
-        - Authorization callback URL
-          - http://toutiao.ie/complete/github
-      - 打开[OAuth Apps](https://github.com/settings/developers)刚才新建的App，复制`Client ID`和`Client Secret`到local_settings.py中
 
-1. Initdb and flush redis
+1. 设置虚拟环境
+   ```
+   pipenv shell
+   ```
+
+2. 开启Flask和Celery
+    ```
+    FLASK_APP=app.py FLASK_ENV=development flask run
+
+    celery -A handler worker -l info
+    ```
+
+3. 重置数据库及Redis缓存，重新生成用户和爬取文章
     ```
     FLASK_APP=manage.py flask initdb
     ```
 
-3. 重启Flask和Celery
-    ```
-    FLASK_APP=app.py FLASK_ENV=development  flask run --port=8080
-
-    celery -A handler worker -l infov
-    ```
-
 4. 运行前端工程，生成js文件，管理前端css
     ```
-    cnpm install
+    npm install
     npm run build
-    ```
-
-5. 爬虫抓取coolshell的`文章RSS`作数据填充
-    ```
-    python crawling.py
-    ```
-
-6. 创建2个用户
-    ```
-    分别通过邮箱和Github注册1个用户
     ```

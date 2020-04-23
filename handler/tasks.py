@@ -9,11 +9,12 @@ from handler.celery import app
 from corelib.consts import K_POST
 from models.search import Item, TARGET_MAPPER
 from models.core import Post
-from models.feed import (feed_to_followers as _feed_to_followers, feed_post as
-                         _feed_post, remove_post_from_feed as
-                         _remove_post_from_feed, ActivityFeed,
-                         remove_user_posts_from_feed as
-                         _remove_user_posts_from_feed)
+from models.feed import (
+    feed_followed_posts_to_follower as _feed_followed_posts_to_follower,
+    feed_post_to_followers as _feed_post_to_followers,
+    remove_post_from_feed as _remove_post_from_feed,
+    add_to_activity_feed as _add_to_activity_feed,
+    remove_user_posts_from_feed as _remove_user_posts_from_feed)
 
 logger = get_task_logger(__name__)
 
@@ -23,7 +24,7 @@ class RequestContextTask(app.Task):
 
     def __call__(self, *args, **kwargs):
         with _app.test_request_context():
-            return super(RequestContextTask, self).__call__(*args, **kwargs)
+            return super().__call__(*args, **kwargs)
 
 
 @app.task
@@ -61,6 +62,7 @@ def reindex(id, kind, op_type):
         item = Item.update_item(target)
     elif op_type == 'delete':
         item = Item.get(target.id, target.kind)
+        Item.delete(item)
     if item:
         logger.info(f'Reindex Finished: {target.__class__.__name__}<id={id}>')
     else:
@@ -68,22 +70,22 @@ def reindex(id, kind, op_type):
 
 
 @app.task(base=RequestContextTask)
-def feed_to_followers(visit_id, uid):
-    _feed_to_followers(visit_id, uid)
-    logger.info(f'Feed_to_followers visit_id:{visit_id}, uid:{uid}')
+def feed_followed_posts_to_follower(from_id, to_id):
+    _feed_followed_posts_to_follower(from_id, to_id)
+    logger.info(
+        f'feed_followed_posts_to_follower from_to:{from_id}, uid:{to_id}')
 
 
 @app.task(base=RequestContextTask)
-def feed_post(id):
+def feed_post_to_followers(id):
     post = Post.get(id)
-    _feed_post(post)
-    logger.info(f'Feed_post {id}')
+    _feed_post_to_followers(post)
+    logger.info(f'feed_post_to_followers {id}')
 
 
 @app.task(base=RequestContextTask)
 def remove_post_from_feed(post_id, author_id):
-    post = Post.get(post_id)
-    _remove_post_from_feed(post, author_id)
+    _remove_post_from_feed(post_id, author_id)
     logger.info(
         f'Remove_post_from_feed post_id:{post_id}, author_id: {author_id}')
 
@@ -96,7 +98,5 @@ def remove_user_posts_from_feed(visit_id, uid):
 
 @app.task(base=RequestContextTask)
 def add_to_activity_feed(post_id):
-    post = Post.get(post_id)
-
-    ActivityFeed.add(int(post.created_at.strftime('%s')), post_id)
+    _add_to_activity_feed(post_id)
     logger.info(f'Add_to_activity_feed post_id:{post_id}')

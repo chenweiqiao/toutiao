@@ -86,20 +86,18 @@ def user(identifier):
 
 def render_user_page(identifier, renderer, target_cls, type='following',
                      endpoint=None):
-    user = User.cache.get(identifier)
-    if not user:
-        user = User.cache.filter(name=identifier).first()
+    user = User.get(identifier)
     if not user:
         abort(404)
     page = request.args.get('page', default=1, type=int)
     if type == 'collect':
-        p = CollectItem.get_target_ids_by_user(user.id, page=page)
+        p = CollectItem.get_paginate_by_user(user.id, page=page)
     elif type == 'like':
-        p = LikeItem.get_target_ids_by_user(user.id, page=page)
+        p = LikeItem.get_paginate_by_user(user.id, page=page)
     elif type == 'following':
-        p = Contact.get_following_ids(user.id, page=page)
+        p = Contact.get_following_paginate(user.id, page=page)
     elif type == 'followers':
-        p = Contact.get_follower_ids(user.id, page=page)
+        p = Contact.get_followers_paginate(user.id, page=page)
     p.items = target_cls.get_multi(p.items)
     return render_template(renderer, **locals())
 # yapf: enable

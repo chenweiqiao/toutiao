@@ -14,9 +14,6 @@
     {{ render_submit('登录', 'commit') }}
   </form>
   <br>
-  <div class="text-center">
-      <a class="btn btn-default" href="/login/github/"><i class="iconfont toutiao-github"></i> GitHub</a>
-  </div>
   <br>
   <div class="menu">
      <p class="left">没有账号？ <a href="{{ url_for_security('register') }}{% if 'next' in request.args %}?next={{ request.args.next|urlencode }}{% endif %}">注册</a> <a class="right" href="{{ url_for_security('forgot_password') }}">忘记密码？</a></p>

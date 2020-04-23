@@ -41,7 +41,6 @@ class User(UserMixin, db.Model):
     roles = db.relationship('Role',
                             secondary=roles_users,
                             backref=db.backref('users', lazy='dynamic'))
-    _stats = None
 
     __table_args__ = (
         db.Index('idx_name', name),
@@ -82,17 +81,13 @@ class User(UserMixin, db.Model):
 
     def follow(self, from_id):
         ok, _ = Contact.create(to_id=self.id, from_id=from_id)
-        if ok:
-            self._stats = None
         return ok
 
     def unfollow(self, from_id):
         contact = Contact.get_follow_item(from_id, self.id)
         if contact:
             contact.delete()
-            self._stats = None
-            return True
-        return False
+        return True if contact else False
 
     def is_followed_by(self, user_id):
         contact = Contact.get_follow_item(user_id, self.id)
@@ -108,20 +103,19 @@ class User(UserMixin, db.Model):
 
     @property
     def _follow_stats(self):
-        if self._stats is None:
-            stats = userFollowStats.get(self.id)
-            if not stats:
-                self._stats = 0, 0
-            else:
-                self._stats = stats.follower_count, stats.following_count
-        return self._stats
+        stats = userFollowStats.get(self.id)
+        return (stats.follower_count, stats.following_count) if stats else (0, 0)  # noqa
 
-    # TODO DELETE CONTACTS, LIKES, COLLECTS, COMMENTS
     def delete(self):
-        super().delete()
-        pass
+        from models.like import LikeItem
+        from models.collect import CollectItem
+        from models.comment import CommentItem
 
-    # TODO
-    @classmethod
-    def __flush_event__(cls, target):
-        pass
+        super().delete()
+        for cond in (Contact.from_id, Contact.to_id):
+            for contact in Contact.query.filter(cond == self.id):
+                contact.delete()  # 注意，放在sqlalchemy的清理钩子里，会报错
+
+        for cls_type in (LikeItem, CollectItem, CommentItem):
+            for like in cls_type.query.filter_by(user_id=self.id):
+                like.delete()

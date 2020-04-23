@@ -10,7 +10,7 @@ class CollectItem(ActionMixin, db.Model):
     target_id = db.Column(db.Integer)
     target_kind = db.Column(db.Integer)
 
-    # 根据action_type判断相似类
+    # 根据action_type判断相似功能的类
     action_type = 'collect'
 
     __table_args__ = (db.Index('idex_ti_tk_ui', target_id, target_kind,
@@ -39,4 +39,4 @@ class CollectMixin:
         return int(CollectItem.get_count_by_target(self.id, self.kind))
 
     def is_collected_by(self, user_id):
-        return CollectItem.is_action_by(user_id, self.id, self.kind)
+        return bool(CollectItem.get_by_target(user_id, self.id, self.kind))

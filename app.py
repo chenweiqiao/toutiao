@@ -1,11 +1,14 @@
 from flask import render_template
 from flask_security import current_user
-from werkzeug.wsgi import DispatcherMiddleware
-from social_flask.routes import social_auth
-from social_flask_sqlalchemy.models import init_social
+from flask_sqlalchemy import get_debug_queries
+try:
+    from werkzeug.wsgi import DispatcherMiddleware
+except ImportError:
+    from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 import config
-from ext import security, db
+from corelib.db import db
+from ext import security
 from corelib.flask import Flask
 from corelib.utils import update_url_query
 from corelib.exmail import send_mail_task as _send_mail_task
@@ -37,22 +40,18 @@ def create_app():
     app.config.from_object(config)
 
     db.init_app(app)
-    init_social(app, db.session)
 
-    _state = security.init_app(app,
-                               user_datastore,
-                               confirm_register_form=ExtendedRegisterForm,
-                               login_form=ExtendedLoginForm)
-    security._state = _state
+    security.init_app(app,
+                      user_datastore,
+                      confirm_register_form=ExtendedRegisterForm,
+                      login_form=ExtendedLoginForm)
     security.send_mail_task(_send_mail_task)
-    app.security = security
 
     app.context_processor(_inject_processor)
     _inject_template_global(app)
 
     app.register_blueprint(index.bp, url_prefix='/')
     app.register_blueprint(account.bp, url_prefix='/')
-    app.register_blueprint(social_auth)
 
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {'/api': api})
 
@@ -72,3 +71,16 @@ def teardown_request(exception):
     if exception:
         db.session.rollback()
     db.session.remove()
+
+
+@app.after_request
+def after_request(response):
+    if config.SQLALCHEMY_RECORD_QUERIES:
+        for query in get_debug_queries():
+            if query.duration > 0:
+                app.logger.warning(
+                    ('\nContext:{}\nSLOW QUERY: {}\nParameters: {}\n'
+                     'Duration: {}\n').format(query.context, query.statement,
+                                              query.parameters,
+                                              query.duration))
+    return response

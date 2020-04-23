@@ -11,10 +11,10 @@ from .schemas import PostSchema, AuthorSchema
 
 
 def create_app():
-    app = ApiFlask(__name__, template_folder='../../templates')
-    app.config.from_object('config')
+    app = ApiFlask(__name__, template_folder='../../templates')  # 以当前app模块所在路径开始计算模板文件夹所在路径 # noqa
+    app.config.from_object('config')  # 但加载`config.py`却是在程序开始运行处
     db.init_app(app)
-    security.init_app(app, user_datastore)  # 使用`request.user_id`时会调用`flask_security`的`current_user` # noqa
+    security.init_app(app, user_datastore)
 
     return app
 
@@ -56,7 +56,7 @@ class ActionAPI(MethodView):
         return post
 
     def _merge(self, post):
-        user_id = request.user_id
+        user_id = request.user_id  # request是个代理，它转发Request，而Request是被重写的， 它有user_id  # noqa
         post.is_liked = post.is_liked_by(user_id)
         post.is_collected = post.is_collected_by(user_id)
         return post
@@ -73,7 +73,7 @@ class ActionAPI(MethodView):
             if ok:
                 macro = get_template_attribute('_macros.html',
                                                'render_comment')
-                return {'html': str(macro(comment).replace('\n\r', ''))}
+                return {'html': str(macro(comment).replace('\n\r', ''))} # CRLF行尾合并多行为一行 # noqa
         if not ok:
             raise ApiException(errors.illegal_state)
         return self._merge(post)

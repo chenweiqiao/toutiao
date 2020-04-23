@@ -31,7 +31,7 @@ def avatar(path):
     return send_from_directory(os.path.join(UPLOAD_FOLDER, 'avatars'), path)
 
 
-@bp.route('/tag/<ident>/')
+@bp.route('/tag/<ident>/')  # 这个`ident`在页面代码中被固定为`python`，爬虫爬取的post手动新添一个`python`标签 # noqa
 def tag(ident):
     ident = ident.lower()
     tag = Tag.get_by_name(ident)
@@ -44,18 +44,17 @@ def tag(ident):
     if type == 'latest':
         posts = PostTag.get_posts_by_tag(ident, page)
     elif type == 'hot':
-        posts = Item.get_post_ids_by_tag(ident, page, type)
+        posts = Item.get_post_ids_by_tag(ident, page, type)  # 从Elasticsearch中查找 # noqa
         posts.items = Post.get_multi(posts.items)
     else:
         # 未知类型
         posts = []
     return render_template('tag.html', tag=tag, ident=ident, posts=posts,
-                           type=type)
+                           type=type)  # 模板能忽略post类型的错误，即使传入posts=[]
 
 
 @bp.route('/search')
 def search():
-    # 目前只支持Post
     query = request.args.get('q', '')
     page = request.args.get('page', default=1, type=int)
     posts = Item.new_search(query, page)

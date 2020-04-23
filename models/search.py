@@ -7,7 +7,8 @@ from elasticsearch.helpers import parallel_bulk
 from elasticsearch.exceptions import ConflictError
 from flask_sqlalchemy import Pagination
 
-from corelib.mc import rdb, cache
+from corelib.mc import cache
+from corelib.db import rdb
 
 from config import ES_HOSTS, PER_PAGE
 from corelib.consts import K_POST, ONE_HOUR
@@ -88,7 +89,7 @@ class Item(Document):
     @classmethod
     @cache(ITEM_MC_KEY.format('{id}', '{kind}'))
     def get(cls, id, kind):
-        """ 获取条目并缓存 """
+        """ 获取对象并缓存 """
         s = cls.search()
         s.query = Q('bool', must=[Q('term', id=id), Q('term', kind=kind)])
         rs = s.execute()
