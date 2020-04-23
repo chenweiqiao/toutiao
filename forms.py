@@ -1,5 +1,3 @@
-# coding=utf-8
-
 from flask_security.forms import (RegisterForm, LoginForm, Required, Length,
                                   StringField, _datastore, ValidationError,
                                   get_message, email_required, email_validator,

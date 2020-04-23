@@ -1,5 +1,3 @@
-# coding=utf-8
-
 import copy
 import json
 from datetime import datetime
@@ -8,21 +6,23 @@ from flask_sqlalchemy import SQLAlchemy, Model, DefaultMeta, declarative_base
 from sqlalchemy import Column, DateTime, Integer, event
 from sqlalchemy.exc import InvalidRequestError
 from flask import abort
-from walrus import Database
 
 from corelib.local_cache import lc
-from config import REDIS_URL
 from corelib.mc import cache
+from . import rdb
 
-MC_KEY_GET_ID = 'db:BaseModel:get(%s,%s)'  # obj_type:obj_id 缓存`Model.get(id)`
+# obj_type,obj_id  Cached `Model.get(id)`
+MC_KEY_GET_ID = 'db:BaseModel:get(%s,%s)'
 
 
 class PropsItem:
-    def __init__(self, name, default=None, output_filter=None, pre_set=None):
-        self.name = name
+    def __init__(self, default='', output_filter=None, pre_set=None):
         self.default = default
         self.output_filter = output_filter
         self.pre_set = pre_set
+
+    def __set_name__(self, owner, name):  # py3.6 support
+        self.name = name
 
     def __get__(self, obj, objtype):
         r = obj.get_props_item(self.name, None)
@@ -40,24 +40,6 @@ class PropsItem:
 
     def __delete__(self, obj):
         obj.delete_props_item(self.name)
-
-
-def datetime_outputfilter(v):
-    return datetime.strptime(v, '%Y-%m-%d %H:%M:%S') if v else None
-
-
-def date_outputfilter(v):
-    return datetime.strptime(v, '%Y-%m-%d').date() if v else None
-
-
-class DatetimePropsItem(PropsItem):
-    def __init__(self, name, default=None):
-        super().__init__(name, default, datetime_outputfilter)
-
-
-class DatePropsItem(PropsItem):
-    def __init__(self, name, default=None):
-        super().__init__(name, default, date_outputfilter)
 
 
 class PropsMixin:
@@ -111,8 +93,8 @@ class PropsMixin:
     def decr_props_item(self, key, min=0):
         n = self.get_props_item(key, 0)
         n -= 1
-        n = n > 0 and n or 0
-        self.set_props_item(key, n > min and n or min)
+        n = max(n, min)
+        self.set_props_item(key, n)
         return n
 
     def update_props(self, data):
@@ -126,6 +108,11 @@ class PropsMixin:
         for col, default in cls._db_columns:
             props[col] = kwargs.pop(col, default)
         return props
+
+    @classmethod
+    def update_db_props(cls, obj, db_props):
+        for prop, value in db_props.items():
+            obj.set_props_item(prop, value)
 
     @classmethod
     def create_or_update(cls, **kwargs):
@@ -145,11 +132,6 @@ class PropsMixin:
         obj.save()
         cls.update_db_props(obj, props)
         return True, obj
-
-    @classmethod
-    def update_db_props(cls, obj, db_props):
-        for prop, value in db_props.items():
-            obj.set_props_item(prop, value)
 
 
 class BaseModel(PropsMixin, Model):
@@ -211,7 +193,7 @@ class BaseModel(PropsMixin, Model):
     def save(self):
         try:
             db.session.add(self)
-        except InvalidRequestError: # 这个错误是由于User.get(id)返回的是缓存对象，而Request那里调用了current_user，从数据库读取user，因此在db.session留下了对象；缓存对象更新某些字段后,db.session里的对象并不能感知缓存对象的变化，需要用merge方法合并到session中 # noqa
+        except InvalidRequestError:
             db.session.merge(self)  # Fix `sqlalchemy.exc.InvalidRequestError: Can't attach instance xxx; another instance with key zzz is already present in this session.` # noqa
         db.session.commit()
 
@@ -240,17 +222,13 @@ class BaseModel(PropsMixin, Model):
             reindex.delay(target.id, target.kind, op_type='update')
         target.__flush_after_update_event__(target)
 
-    @staticmethod
-    def _flush_before_update_event(mapper, connection, target):
-        target.__flush_before_update_event__(target)
-
     @classmethod
     def __flush_event__(cls, target):
         rdb.delete(MC_KEY_GET_ID % (target.__class__.__name__, target.id))
 
     @classmethod
     def __flush_insert_event__(cls, target):
-        pass
+        target.__flush_event__(target)
 
     @classmethod
     def __flush_delete_event__(cls, target):
@@ -261,15 +239,10 @@ class BaseModel(PropsMixin, Model):
         target.__flush_event__(target)
 
     @classmethod
-    def __flush_before_update_event__(cls, target):
-        pass
-
-    @classmethod
     def __declare_last__(cls):
         event.listen(cls, 'after_insert', cls._flush_insert_event)
         event.listen(cls, 'after_delete', cls._flush_delete_event)
         event.listen(cls, 'after_update', cls._flush_after_update_event)
-        event.listen(cls, 'before_update', cls._flush_before_update_event)
 
 
 class BindDBPropertyMeta(DefaultMeta):
@@ -282,7 +255,6 @@ class BindDBPropertyMeta(DefaultMeta):
         cls._db_columns = db_columns
 
 
-rdb = Database.from_url(REDIS_URL)
 db = SQLAlchemy(model_class=declarative_base(cls=BaseModel,
                                              metaclass=BindDBPropertyMeta,
                                              name='Model'))

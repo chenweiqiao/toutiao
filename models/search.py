@@ -16,8 +16,12 @@ from models.core import Post
 
 connections.create_connection(hosts=ES_HOSTS)
 
-ITEM_MC_KEY = 'core:search:{}:{}'  # item.id item.kind
-POST_IDS_BY_TAG_MC_KEY = 'core:search:post_ids_by_tag:%s:%s:%s:%s'  # tag, page, order, per_page # noqa
+# item.id, item.kind 获取对象并缓存
+ITEM_MC_KEY = 'search:get({},{})'
+
+# tag, page, order, per_page 只搜索热点post，缓存期为一个小时
+POST_IDS_BY_TAG_MC_KEY = 'search:get_post_ids_by_tag(%s,%s,%s,%s)'
+
 SEARCH_FIELDS = ['title^10', 'tags^5', 'content^2']
 TARGET_MAPPER = {K_POST: Post}
 
@@ -153,7 +157,7 @@ class Item(Document):
 
     @classmethod
     def new_search(cls, query, page, order_by=None, per_page=PER_PAGE):
-        """ 根据关键字搜索结果，从三个方面搜索，title权重最大, tag次之, content最后 """
+        """ 根据关键字搜索结果，title权重最大, tag次之, content最小 """
         s = cls.search()
         s = s.query('multi_match', query=query, fields=SEARCH_FIELDS)  # 多行匹配
 
@@ -185,9 +189,7 @@ class Item(Document):
     def get_post_ids_by_tag(cls, tag, page, order_by=None, per_page=PER_PAGE):
         """ 只搜索热点post，缓存期为一个小时 """
         s = cls.search()
-        # s = s.query(Q('bool', must=Q('term', tags=tag)))
         s = s.query(Q('bool', must=Q('term', kind=K_POST)))
-        start = (page - 1) * PER_PAGE
         if page < 1:
             page = 1
         start = (page - 1) * PER_PAGE

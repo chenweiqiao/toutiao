@@ -1,5 +1,3 @@
-# coding=utf-8
-
 from flask_security import Security, SQLAlchemyUserDatastore
 
 from models.user import User, Role

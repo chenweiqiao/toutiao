@@ -33,16 +33,15 @@ def _add_users():
     import datetime
     from models.user import User
 
-    with app.app_context():
-        _, u1 = User.create(name='admin',
-                            password='admin',
-                            active=True,
-                            confirmed_at=datetime.datetime.now())
-        _, u2 = User.create(name='guest',
-                            password='guest',
-                            active=True,
-                            confirmed_at=datetime.datetime.now())
-        u1.follow(u2.id)  # u2 关注 u1，测试时用 u2 登录
+    _, u1 = User.create(name='admin',
+                        password='admin',
+                        active=True,
+                        confirmed_at=datetime.datetime.now())
+    _, u2 = User.create(name='guest',
+                        password='guest',
+                        active=True,
+                        confirmed_at=datetime.datetime.now())
+    u1.follow(u2.id)  # u2 关注 u1，测试时用 u2 登录
 
 
 def _crawl_posts():
@@ -50,6 +49,7 @@ def _crawl_posts():
 
 
 @app.cli.command('initdb', short_help='Inits testing environment.')
+@with_appcontext
 def reset_environ():
     _flush_environ()
     _create_environ()

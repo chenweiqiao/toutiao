@@ -14,7 +14,7 @@ class CommentItem(ActionMixin, LikeMixin, db.Model):
     target_id = db.Column(db.Integer)
     target_kind = db.Column(db.Integer)
     ref_id = db.Column(db.Integer, default=0)  # 评论分文章评论，还有评论的评论，文章评论设置为0
-    content = PropsItem('content', '')
+    content = PropsItem()
     kind = K_COMMENT
 
     action_type = 'comment'

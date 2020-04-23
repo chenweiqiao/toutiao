@@ -1,5 +1,3 @@
-# coding=utf-8
-
 ONE_MINUTE = 60
 ONE_HOUR = ONE_MINUTE * 60
 ONE_DAY = ONE_HOUR * 24

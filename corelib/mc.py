@@ -6,6 +6,7 @@ from pickle import UnpicklingError
 from sqlalchemy.ext.serializer import loads, dumps  # 处理sqlalchemy的model实例
 
 from corelib.utils import Empty, empty
+from . import rdb
 
 
 __formaters = {}
@@ -82,8 +83,6 @@ def cache(key_pattern, expire=None):
 
         @wraps(f)
         def _(*a, **kw):
-            from corelib.db import rdb
-
             key, args = gen_key(*a, **kw)
             if not key:
                 return f(*a, **kw)
@@ -123,8 +122,6 @@ def pcache(key_pattern, count=300, expire=None):
 
         @wraps(f)
         def _(*a, **kw):
-            from corelib.db import rdb
-
             key, args = gen_key(*a, **kw)
             start = args.pop('start', 0)
             limit = args.pop('limit')
@@ -158,8 +155,6 @@ def pcache2(key_pattern, count=300, expire=None):
 
         @wraps(f)
         def _(*a, **kw):
-            from corelib.db import rdb
-
             key, args = gen_key(*a, **kw)
             start = args.pop('start', 0)
             limit = args.pop('limit')

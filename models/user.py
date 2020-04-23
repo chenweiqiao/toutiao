@@ -114,7 +114,7 @@ class User(UserMixin, db.Model):
         super().delete()
         for cond in (Contact.from_id, Contact.to_id):
             for contact in Contact.query.filter(cond == self.id):
-                contact.delete()  # 注意，放在sqlalchemy的清理钩子里，会报错
+                contact.delete()  # 注意，如果放在sqlalchemy的清理钩子里，会报错
 
         for cls_type in (LikeItem, CollectItem, CommentItem):
             for like in cls_type.query.filter_by(user_id=self.id):

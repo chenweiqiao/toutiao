@@ -34,7 +34,7 @@ class Post(CommentMixin, LikeMixin, CollectMixin, db.Model):
     title = db.Column(db.String(128), default='')
     orig_url = db.Column(db.String(255), default='')
     can_comment = db.Column(db.Boolean, default=True)
-    content = PropsItem('content', '')
+    content = PropsItem()
     kind = K_POST
 
     __table_args__ = (
@@ -57,10 +57,10 @@ class Post(CommentMixin, LikeMixin, CollectMixin, db.Model):
     @property
     @cache(MC_KEY_TAGS % ('{self.id}'))
     def tags(self):
-        post_ids = PostTag.query.with_entities(PostTag.tag_id).\
+        tag_ids = PostTag.query.with_entities(PostTag.tag_id).\
             filter(PostTag.post_id == self.id).all()
 
-        tags = Tag.query.filter(Tag.id.in_((id for id, in post_ids))).all()
+        tags = Tag.query.filter(Tag.id.in_((id for id, in tag_ids))).all()
         return tags
 
     @cached_property
@@ -212,6 +212,6 @@ class PostTag(db.Model):
         tag_name = Tag.get(tag_id).name
         for ident in (tag_id, tag_name):
             total = incr_key(MC_KEY_GET_COUNT_BY_TAG % ident, amount)
-            pages = math.ceil((max(total, 0) or 1) / PER_PAGE)
+            pages = math.ceil(max(total, 1) / PER_PAGE)
             for p in range(1, pages + 1):
                 rdb.delete(MC_KEY_GET_POSTS_BY_TAG % (ident, p))

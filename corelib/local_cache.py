@@ -20,7 +20,7 @@ class LocalCache(object):
     def get_multi(self, keys):
         ds = self.dataset
         ds_get = ds.get
-        r = dict((k, ds_get(k)) for k in keys)
+        r = {k: ds_get(k) for k in keys}
         return r
 
     def get_list(self, keys):

@@ -56,7 +56,7 @@ class ActionAPI(MethodView):
         return post
 
     def _merge(self, post):
-        user_id = request.user_id  # request是个代理，它转发Request，而Request是被重写的， 它有user_id  # noqa
+        user_id = request.user_id
         post.is_liked = post.is_liked_by(user_id)
         post.is_collected = post.is_collected_by(user_id)
         return post
@@ -67,6 +67,7 @@ class ActionAPI(MethodView):
         if self.do_action != 'add_comment':
             ok = getattr(post, self.do_action)(request.user_id)
         else:
+            # 没有验证字段，存在漏洞 :<
             content = request.form.get('content')
             ok, comment = getattr(post, self.do_action)(request.user_id,
                                                         content)

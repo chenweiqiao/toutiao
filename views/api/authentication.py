@@ -1,10 +1,8 @@
-# coding=utf-8
-
 from flask_security import login_user, current_user
 from flask_security.utils import verify_password as _verify_password
 from flask_httpauth import HTTPBasicAuth
 
-from . import user_datastore, json_api, ApiException, errors  # 因为是在包内，可以这样引用
+from . import user_datastore, json_api, ApiException, errors
 
 auth = HTTPBasicAuth()  # 配合 json_api 蓝图使用
 

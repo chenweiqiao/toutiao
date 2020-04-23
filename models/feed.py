@@ -1,5 +1,3 @@
-# coding=utf-8
-
 """
 注意，下面的函数参数，参考`Contact`模型里的字段定义, `from_id`为关注者`follower`，
 `to_id`为被关注者`followed`。

@@ -6,6 +6,7 @@ from models.user import User
 
 
 class Request(_Request):
+    """ 为request增加user_id和user两个属性 """
     @cached_property
     def user_id(self):
         user = current_user

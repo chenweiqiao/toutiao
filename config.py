@@ -2,12 +2,13 @@ import os
 
 # Flask
 SECRET_KEY = '123'
-TEMPLATES_AUTO_RELOAD = True  # `flask run`下自动reload模板文件
+TEMPLATES_AUTO_RELOAD = True
+PRESERVE_CONTEXT_ON_EXCEPTION = True  # catch exception in @teardown_request
 
 # Extended Flask-SQLAlchemy
 SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:@localhost/video?charset=utf8mb4'  # noqa
 SQLALCHEMY_TRACK_MODIFICATIONS = False
-SQLALCHEMY_RECORD_QUERIES = False
+SQLALCHEMY_RECORD_QUERIES = False  # `debug:on`模式下总能启动`get_debug_queries`, 而只有True时`debug:off`模式才会启用`get_debug_queries`  # noqa
 
 # Extended Flask-Security configuration
 SECURITY_CONFIRMABLE = True
@@ -43,8 +44,6 @@ SECURITY_MSG_CONFIRMATION_REQUIRED = ('登录前请先邮箱确认', 'error')
 SECURITY_MSG_INVALID_PASSWORD = ('账号或者密码错误', 'error')
 SECURITY_MSG_RETYPE_PASSWORD_MISMATCH = ('2次密码输入不一致', 'error')
 SECURITY_USER_IDENTITY_ATTRIBUTES = ('email', 'name')
-
-# CACHE_TYPE = 'redis'
 
 # Celery configuration
 BROKER_URL = 'pyamqp://guest:123456@localhost:5672/test'  # 使用RabbitMQ作为消息代理

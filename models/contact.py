@@ -1,5 +1,3 @@
-# coding=utf-8
-
 """
 |————————————————————————————————————————————————————————|
 | contact | `followers` --> current_user --> `following` |

@@ -1,5 +1,3 @@
-# coding=utf-8
-
 import smtplib
 
 from celery.utils.log import get_task_logger

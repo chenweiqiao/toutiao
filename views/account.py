@@ -1,5 +1,3 @@
-# coding=utf-8
-
 from flask import request, abort, render_template
 from flask.blueprints import Blueprint
 from flask_security import login_required
@@ -14,7 +12,7 @@ from corelib.utils import AttrDict
 bp = Blueprint('account', __name__)
 
 
-@bp.route('landing')
+@bp.route('/landing')
 def landing():
     type = request.args.get('type')
     type_map = {
@@ -32,11 +30,12 @@ def landing():
     return render_template('security/landing.html', **locals())
 
 
-@bp.route('settings/', methods=['GET', 'POST'])
+@bp.route('/settings/', methods=['GET', 'POST'])
 @login_required
 def settings():
     notice = False
     if request.method == 'POST':
+        # 没有验证字段，存在漏洞 :<
         user = request.user
         image = request.files.get('user_image')
         d = request.form.to_dict()
@@ -54,31 +53,31 @@ def settings():
 
 
 # yapf: disable
-@bp.route('user/<identifier>/likes/')
+@bp.route('/user/<identifier>/likes/')
 def user_likes(identifier):
     return render_user_page(identifier, 'card.html', Post, 'like',
                             endpoint='account.user_likes')  # Fix pagination
 
 
-@bp.route('user/<identifier>/favorites/')
+@bp.route('/user/<identifier>/favorites/')
 def user_favorites(identifier):
     return render_user_page(identifier, 'card.html', Post, 'collect',
                             endpoint='account.user_favorites')
 
 
-@bp.route('user/<identifier>/following/')
+@bp.route('/user/<identifier>/following/')
 def user_following(identifier):
     return render_user_page(identifier, 'user.html', User, 'following',
                             endpoint='account.user_following')
 
 
-@bp.route('user/<identifier>/followers/')
+@bp.route('/user/<identifier>/followers/')
 def user_followers(identifier):
     return render_user_page(identifier, 'user.html', User, 'followers',
                             endpoint='account.user_followers')
 
 
-@bp.route('user/<identifier>/')
+@bp.route('/user/<identifier>/')
 def user(identifier):
     return render_user_page(identifier, 'user.html', User,
                             endpoint='account.user')

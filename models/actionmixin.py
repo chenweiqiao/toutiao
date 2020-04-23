@@ -1,5 +1,3 @@
-# coding=utf-8
-
 import math
 
 from config import PER_PAGE
@@ -8,19 +6,19 @@ from corelib.db import rdb
 from corelib.utils import incr_key
 from corelib.consts import K_POST
 
-# action_type, target_id, target_kind 统计对象<like|collect|comment>的数量
+# action_type, target_id, target_kind 统计对象被 <like|collect|comment> 的数量
 MC_KEY_GET_COUNT_BY_TARGET = 'actionmixin:ActionMixin:get_count_by_target(%s,%s,%s)'  # noqa
 
-# action_type, user_id, target_kind 统计用户like数量
+# action_type, user_id, target_kind 统计用户 <like> 对象数量
 MC_KEY_GET_COUNT_BY_USER = 'actionmixin:ActionMixin:get_count_by_user(%s,%s,%s)'  # noqa
 
 # action_type, target_id, target_kind, page 特指post的comment列表分页
 MC_KEY_GET_PAGE_BY_TARGET = 'actionmixin:ActionMixin:get_page_by_target(%s,%s,%s,%s)'  # noqa
 
-# action_type, user_id, target_id, target_kind 判断用户是否<like|collect|comment>
+# action_type, user_id, target_id, target_kind 判断用户是否 <like|collect|comment> 对象
 MC_KEY_GET_BY_TARGET = 'actionmixin:ActionMixin:get_by_target(%s,%s,%s,%s)'  # noqa
 
-# acton_type, user_id, target_kind, page 用户<like|collect>的post列表分页
+# acton_type, user_id, target_kind, page 用户 <like|collect> 的post列表分页
 MC_KEY_GET_PAGINATE_BY_USER = 'actionmixin:ActionMixin:get_paginate_by_user(%s,%s,%s,%s)'  # noqa
 
 
@@ -32,6 +30,8 @@ class ActionMixin:
     @cache(MC_KEY_GET_COUNT_BY_TARGET %
            ('{cls.action_type}', '{target_id}', '{target_kind}'))
     def get_count_by_target(cls, target_id, target_kind):
+        """ 统计对象被 <like|collect|comment> 的数量，
+        只有第一次是从数据库读取，以后都是在缓存里的增减数值，好处是减少数据库的读取操作 """
         return cls.query.filter_by(target_id=target_id,
                                    target_kind=target_kind).count()
 
@@ -39,6 +39,7 @@ class ActionMixin:
     @cache(MC_KEY_GET_BY_TARGET %
            ('{cls.action_type}', '{user_id}', '{target_id}', '{target_kind}'))
     def get_by_target(cls, user_id, target_id, target_kind):
+        """ 判断用户是否 <like|collect|comment> 对象 """
         return cls.query.filter_by(user_id=user_id,
                                    target_id=target_id,
                                    target_kind=target_kind).first()
@@ -47,6 +48,7 @@ class ActionMixin:
     @cache(MC_KEY_GET_PAGINATE_BY_USER %
            ('{cls.action_type}', '{user_id}', '{target_kind}', '{page}'))
     def get_paginate_by_user(cls, user_id, target_kind=K_POST, page=1):
+        """ 用户 <like|collect> 的post列表分页 """
         query = cls.query.with_entities(cls.target_id).filter_by(
             user_id=user_id, target_kind=target_kind)
         posts = query.paginate(page, PER_PAGE)
@@ -58,6 +60,7 @@ class ActionMixin:
     @cache(MC_KEY_GET_COUNT_BY_USER %
            ('{cls.action_type}', '{user_id}', '{target_kind}'))
     def get_count_by_user(cls, user_id, target_kind=K_POST):
+        """ 统计用户 <like> 对象数量 """
         return cls.query.filter_by(user_id=user_id,
                                    target_kind=target_kind).count()
 
@@ -65,6 +68,7 @@ class ActionMixin:
     @cache(MC_KEY_GET_PAGE_BY_TARGET %
            ('{cls.action_type}', '{target_id}', '{target_kind}', '{page}'))
     def get_page_by_target(cls, target_id, target_kind, page=1):
+        """ 特指post的comment列表分页 """
         query = cls.query.filter_by(target_id=target_id,
                                     target_kind=target_kind).order_by(
                                         cls.id.desc())
@@ -84,16 +88,6 @@ class ActionMixin:
         super().__flush_delete_event__(target)
         target.clear_mc(target, -1)
 
-    # @classmethod
-    # def __flush_after_update_event__(cls, target):
-    #     super().__flush_after_update_event__(target)
-    #     target.clear_mc(target, 1)
-
-    # @classmethod
-    # def __flush_before_update_event__(cls, target):
-    #     super().__flush_before_update_event__(target)
-    #     target.clear_mc(target, -1)
-
     @classmethod
     def clear_mc(cls, target, amount):
         action_type = cls.action_type
@@ -104,7 +98,7 @@ class ActionMixin:
         stat_key = MC_KEY_GET_COUNT_BY_TARGET % (action_type, target_id,
                                                  target_kind)
         total = incr_key(stat_key, amount)
-        pages = math.ceil((max(total, 0) or 1) / PER_PAGE)
+        pages = math.ceil(max(total, 1) / PER_PAGE)
 
         user_id = target.user_id
         rdb.delete(MC_KEY_GET_BY_TARGET %
@@ -119,7 +113,7 @@ class ActionMixin:
         stat_key = MC_KEY_GET_COUNT_BY_USER % (
             action_type, user_id, target_kind)
         total = incr_key(stat_key, amount)
-        pages = math.ceil((max(total, 0) or 1) / PER_PAGE)
+        pages = math.ceil(max(total, 1) / PER_PAGE)
 
         for p in range(1, pages + 1):
             rdb.delete(

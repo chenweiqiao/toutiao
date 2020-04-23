@@ -1,4 +1,3 @@
-# coding=utf-8
 """ Format: ``return code`` ``message`` ``status``"""
 unknown_error = (1000, 'unknown error', 400)
 access_forbidden = (1001, 'access forbidden', 403)

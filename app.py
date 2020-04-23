@@ -8,13 +8,12 @@ except ImportError:
 
 import config
 from corelib.db import db
-from ext import security
+from ext import security, user_datastore
 from corelib.flask import Flask
 from corelib.utils import update_url_query
 from corelib.exmail import send_mail_task as _send_mail_task
 from forms import ExtendedLoginForm, ExtendedRegisterForm
-import views.index as index
-import views.account as account
+from views import index, account
 from views.api import json_api as api
 
 
@@ -30,12 +29,11 @@ def _inject_template_global(app):
     app.add_template_global(dir)
     app.add_template_global(len)
     app.add_template_global(hasattr)
-    app.add_template_global(current_user, 'current_user')
+    app.add_template_global(current_user)
     app.add_template_global(update_url_query)
 
 
 def create_app():
-    from ext import user_datastore
     app = Flask(__name__)
     app.config.from_object(config)
 
@@ -62,7 +60,7 @@ app = create_app()
 
 
 @app.errorhandler(404)
-def page_not_found(e):
+def page_not_found(exception):
     return render_template('404.html'), 404
 
 
@@ -75,12 +73,12 @@ def teardown_request(exception):
 
 @app.after_request
 def after_request(response):
-    if config.SQLALCHEMY_RECORD_QUERIES:
-        for query in get_debug_queries():
-            if query.duration > 0:
-                app.logger.warning(
-                    ('\nContext:{}\nSLOW QUERY: {}\nParameters: {}\n'
-                     'Duration: {}\n').format(query.context, query.statement,
-                                              query.parameters,
-                                              query.duration))
+    if not config.SQLALCHEMY_RECORD_QUERIES:
+        return response
+    for query in get_debug_queries():
+        if query.duration > 0:
+            app.logger.warning(
+                ('\nContext:{}\nSLOW QUERY: {}\nParameters: {}\n'
+                 'Duration: {}\n').format(query.context, query.statement,
+                                          query.parameters, query.duration))
     return response
